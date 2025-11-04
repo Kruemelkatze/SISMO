@@ -1,0 +1,213 @@
+
+to create-pseudopodia-network [breeds]
+  reset-timer
+  ;; 1. Extract pseudopodia data
+  let pseudos [pseudopodia] of breeds
+  let coordinates-list [path-list] of item 0 pseudos
+  ;;print coordinates-list
+ ;; let valid-agents breeds with [breed = pseudopodia]
+  ;;py:run "import sys"
+  ;;py:run "from data_processor import data_export"
+  ;;py:run "from data_processor import data_import"
+  ;;py:run "from prepare_data_mp import data_preparation"
+  ;;py:run "from intersection_calc_mp import calculation"
+  ;;let pseudos [ (list (list "path-list" [path-list] of self)) ] of valid-agents
+  let buffer nobody
+  let buffer-size 20
+  let x 0
+  let leng length coordinates-list
+  let res 0
+  ;;while [x < leng]
+  ;;[
+  ;;  ifelse (x + buffer-size) < leng
+  ;;  [
+  ;;    py:set "buffered_list" sublist coordinates-list x (x + buffer-size)
+  ;;    set x x + buffer-size
+      ;;print "Erste if"
+  ;;  ]
+   ;; [
+    ;;  py:set "buffered_list" sublist coordinates-list x leng
+     ;; set x leng
+      ;;print "Zweite if"
+    ;;]
+    ;;set res py:runresult "data_import(buffered_list)"
+  ;;]
+  ;; 2. Send data to Python
+  ;;print pseudos
+  ;;py:run "import sys"
+
+  ;;py:set "pseudos" coordinates-list
+  ;;let prep py:runresult "data_preparation()"
+  ;;let calculatius py:runresult "calculation()"
+  ;;py:run "from bentley-ottman import process_intersections"
+  ;;py:run "from mp_try import process_intersections"
+  py:set "raw_data" coordinates-list
+  let pyresult py:runresult"process_intersections(raw_data)"
+  ;;print "after py Script size: "
+  ;;print length stats
+ ;;print pyresult
+ let i 0
+while [ i < length pyresult ] [
+  
+    let received item i pyresult
+    let intersection-coordinate-result item 0 received
+    let first-point item 1 received 
+    let second-point item 2 received
+  
+    ;; Build-network parameters
+    let x-1 item 0 first-point 
+    let y-1 item 1 first-point 
+    let x-2 item 0 second-point
+    let y-2 item 1 second-point
+    ;;print received
+    ;; Calculate intersection points
+    ifelse (intersection-coordinate-result != nobody) 
+    [   
+      let first-compare-point item 3 received
+      let second-compare-point item 4 received
+      let x-1-compare item 0 first-compare-point    
+      let y-1-compare item 1 first-compare-point    
+      let x-2-compare item 0 second-compare-point    
+      let y-2-compare item 1 second-compare-point
+      
+    ;; Mark intersection points with X if enabled
+    if show-intersection-points [
+      hatch 1 [
+        set shape "x"
+        set color red
+        set size 1
+        set xcor item 0 intersection-coordinate-result
+        set ycor item 1 intersection-coordinate-result
+      ]
+    ]        
+    
+    ;; Create/find network nodes
+    set first-point one-of networkpoints with [ xcor = x-1 and ycor = y-1 ]
+    let intersec-point one-of networkpoints with [ 
+      xcor = item 0 intersection-coordinate-result and 
+      ycor = item 1 intersection-coordinate-result 
+    ]
+    
+    ;; Create first point if missing
+    if (first-point = nobody) [
+      hatch-networkpoints 1 [
+        setxy x-1 y-1
+        set hidden? not show-network
+        set shape "circle"
+        set size 0.5
+        set color blue
+        set label ""
+        set first-point self
+      ]
+    ]
+    
+    ;; Create intersection point if missing
+    if (intersec-point = nobody) [
+      hatch-networkpoints 1 [
+        setxy (item 0 intersection-coordinate-result) (item 1 intersection-coordinate-result)
+        set hidden? not show-network
+        set shape "circle"
+        set size 0.5
+        set color blue
+        set label ""
+        set intersec-point self
+      ]
+    ] 
+    
+    ;; Create links between points
+    ask first-point [ create-link-with intersec-point ]
+    
+    ;; Handle second point
+    set second-point one-of networkpoints with [ xcor = x-2 and ycor = y-2 ]
+    if (second-point = nobody) [
+      hatch-networkpoints 1 [
+        setxy x-2 y-2
+        set hidden? not show-network
+        set shape "circle"
+        set size 0.5
+        set color blue
+        set label ""
+        set second-point self
+      ]
+    ]                  
+    ask intersec-point [ create-link-with second-point ]
+    
+    ;; Handle comparison points
+    set first-compare-point one-of networkpoints with [ xcor = x-1-compare and ycor = y-1-compare ]
+    if (first-compare-point = nobody) [
+      hatch-networkpoints 1 [
+        setxy x-1-compare y-1-compare
+        set hidden? not show-network
+        set shape "circle"
+        set size 0.5
+        set color blue
+        set label ""
+        set first-compare-point self
+      ]
+    ]
+    ask first-compare-point [ create-link-with intersec-point ]
+    
+    set second-compare-point one-of networkpoints with [ xcor = x-2-compare and ycor = y-2-compare ]
+    if (second-compare-point = nobody) [
+      hatch-networkpoints 1 [
+        setxy x-2-compare y-2-compare
+        set hidden? not show-network
+        set shape "circle"
+        set size 0.5
+        set color blue
+        set label ""
+        set second-compare-point self
+      ]
+    ]
+    ask intersec-point [ create-link-with second-compare-point ]                    
+    ]
+  
+    [ 
+      ;; No intersection case 
+      build-network x-1 y-1 x-2 y-2
+    ]
+  
+  ;; Style links
+  ask links [ set color orange ]   
+  set i i + 1
+]
+  ;;print (word "Execution time: " timer " seconds")
+ ; print word "End NETWORK CREATION:" date-and-time
+  ;print timer
+end
+
+
+
+
+to build-network [x-1 y-1 x-2 y-2]
+  ;; check if there are existing network points, if not create some and link them, if they exist create the missing one and connect them
+  let first-point one-of networkpoints with [xcor = x-1 and ycor = y-1]
+  let second-point one-of networkpoints with [xcor = x-2 and ycor = y-2]
+  if(first-point = nobody)
+  [
+    hatch-networkpoints 1
+    [
+      setxy x-1 y-1
+      set hidden? not show-network
+      set shape "circle"
+      set size .5
+      set color blue
+      set label ""
+      set first-point self
+    ]
+  ]
+  if(second-point = nobody)
+  [
+    hatch-networkpoints 1
+    [
+      setxy x-2 y-2
+      set hidden? not show-network
+      set shape "circle"
+      set size .5
+      set color blue
+      set label ""
+      set second-point self
+    ]
+  ]
+  ask first-point [create-link-with second-point]
+end

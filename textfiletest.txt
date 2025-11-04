@@ -1,0 +1,8 @@
+ make-foods 12.3 -2.5 ;;Grafenstein
+  make-foods 9.1 0.47 ;; St.Veit a. der Glan
+  make-foods 6 -0.2 ;; St.Martin Sittich
+  make-foods -0.5 -3.99;;Villach
+  make-foods -2.9 -2.5;; GUmmern
+  make-foods 3.7 -6.7 ;; Rosenbach
+  make-foods 8.3 -3.3 ;; Klagenfurt Main Station
+  ;;make-foods 8.3 -3.3 ;; Klagenfurt Main Station
