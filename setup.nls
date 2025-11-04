@@ -24,6 +24,7 @@ to make-pseudopodia [number x-cor y-cor]
     set path-list []
     set path-list insert-item 0 path-list (list xcor ycor 0)
     pen-down
+    ;; Comment by FS: This seems to be ignored and overriden by grey.
     ifelse random-float 1.0 < 0.5 [
       set info-color yellow
     ][
