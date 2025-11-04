@@ -6,38 +6,39 @@ to run-a-star [x-start y-start x-end y-end]
   ask links with [color = yellow][set color grey set thickness 0]
   let start one-of networkpoints with [xcor = x-start and ycor = y-start]
   if start != nobody [
-  ask start [set color green set size 1]
-  ;show start
-  ;show networkpoints
-  let goal one-of networkpoints with [xcor = x-end and  ycor = y-end]
-  set debug-counter debug-counter + 1
+    ask start [set color green set size 1]
+    ;show start
+    ;show networkpoints
+    let goal one-of networkpoints with [xcor = x-end and  ycor = y-end]
+    print goal
+    set debug-counter debug-counter + 1
 
-  if goal != nobody [
-    ask goal [set color green set size 1]
+    if goal != nobody [
+      ask goal [set color green set size 1]
   
-  let path (A* start goal)    
-  if path != false
-  [         
-    let start-food one-of foods with [xcor = x-start and  ycor = y-start]  
-    let end-food one-of foods with [xcor = x-end and  ycor = y-end] 
-      
-    highlight-path path
-    let tube-path []
-    foreach path [ x -> set tube-path lput x tube-path]
-    ;; hatch tube to make it visible
-    hatch-tubes 1
-    [
-      setxy x-start y-start
-      set path-list tube-path
-      set color green
-      set size 2      
-      set pen-size 8
-      pen-down
-     
-    ]
+      let path (A* start goal)    
+      if path != false
+      [         
+        let start-food one-of foods with [xcor = x-start and  ycor = y-start]  
+        let end-food one-of foods with [xcor = x-end and  ycor = y-end] 
+          
+        highlight-path path
+        let tube-path []
+        foreach path [ x -> set tube-path lput x tube-path]
+        ;; hatch tube to make it visible
+        hatch-tubes 1
+        [
+          setxy x-start y-start
+          set path-list tube-path
+          set color green
+          set size 2      
+          set pen-size 8
+          pen-down
+        
+        ]
       ]
     ]
-    ]
+  ]
 end
 
 ; Searcher report to compute the heuristic for this searcher: in this case, one good option
