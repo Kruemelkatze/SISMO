@@ -1,7 +1,7 @@
 ; Auxiliary procedure to test the A* algorithm between two random nodes of the network
 to run-a-star [x-start y-start x-end y-end]
+  ask networkpoints [set color blue set size .5]
  
-   ask networkpoints [set color blue set size .5]
   ;;print word "networkpoints" count networkpoints
   ask links with [color = yellow][set color grey set thickness 0]
   let start one-of networkpoints with [xcor = x-start and ycor = y-start]
@@ -10,7 +10,6 @@ to run-a-star [x-start y-start x-end y-end]
     ;show start
     ;show networkpoints
     let goal one-of networkpoints with [xcor = x-end and  ycor = y-end]
-    print goal
     set debug-counter debug-counter + 1
 
     if goal != nobody [
@@ -38,7 +37,10 @@ to run-a-star [x-start y-start x-end y-end]
         ]
       ]
     ]
+    print ""
+
   ]
+  
 end
 
 ; Searcher report to compute the heuristic for this searcher: in this case, one good option

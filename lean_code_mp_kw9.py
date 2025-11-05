@@ -6,12 +6,14 @@ from multiprocessing import Pool
 #end = time.perf_counter()
 #print(f"Time taken: {end - start:.4f} seconds")
 
+eps = 1e-10
+
 def calculate_intersection(A, B):
     x1, y1, x2, y2 = A
     x3, y3, x4, y4 = B
 
     denominator = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4)
-    if denominator == 0:
+    if abs(denominator) < eps:  # Use tolerance for floating point comparison
         return None  # Parallele Linien
 
     t_numerator = (x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)
@@ -22,9 +24,19 @@ def calculate_intersection(A, B):
     if 0 <= t <= 1 and 0 <= u <= 1:
         x = x1 + t * (x2 - x1)
         y = y1 + t * (y2 - y1)
-        # Überprüfen, ob der Schnittpunkt nicht auf den Endpunkten liegt
-        if (x != x1 and x != x2 and x != x3 and x != x4 and
-                y != y1 and y != y2 and y != y3 and y != y4):
+        # Check if the intersection point is not on the endpoints at the same time
+        # Use tolerance for floating point comparison
+        is_on_endpoint_A_start = abs(x - x1) < eps and abs(y - y1) < eps
+        is_on_endpoint_A_end = abs(x - x2) < eps and abs(y - y2) < eps
+        is_on_endpoint_B_start = abs(x - x3) < eps and abs(y - y3) < eps
+        is_on_endpoint_B_end = abs(x - x4) < eps and abs(y - y4) < eps
+        
+        # Nur filtern, wenn der Schnittpunkt genau auf beiden Segment-Endpunkten gleichzeitig liegt
+        # (d.h. wenn beide Segmente den gleichen Endpunkt teilen)
+        if not ((is_on_endpoint_A_start and is_on_endpoint_B_start) or
+                (is_on_endpoint_A_start and is_on_endpoint_B_end) or
+                (is_on_endpoint_A_end and is_on_endpoint_B_start) or
+                (is_on_endpoint_A_end and is_on_endpoint_B_end)):
             return [x, y]
     return None
 
@@ -111,8 +123,10 @@ def process_intersections(raw_data, num_processes=1, chunk_size=100):
 
     for pseudos in raw_data:
         coord_list_length = len(pseudos)
-        for coord_list_index in range(1, coord_list_length - 1):
-            reverse_index = coord_list_length - coord_list_index
+        # Process all n-1 segments: (0,1), (1,2), ..., (n-2, n-1)
+        # Using reverse indexing with reverse_index and reverse_index-1
+        for coord_list_index in range(0, coord_list_length - 1):
+            reverse_index = coord_list_length - coord_list_index - 1
             if pseudos[reverse_index][2] == 0 and pseudos[reverse_index - 1][2] == 0:
                 x1 = pseudos[reverse_index - 1][0]
                 y1 = pseudos[reverse_index - 1][1]
