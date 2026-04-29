@@ -262,6 +262,27 @@ to go
     py:set "sim_id_str" sim_id
     py:run "import shutil\nshutil.copy('simulation_color_counts.csv', 'output/' + sim_id_str + '.color_counts.csv')"
     export-view (word "output/" sim_id ".simview.png")
+    ;;export-plot "Agents with Information" (word "output/" sim_id ".agents_plot.png")
+    export-interface (word "output/" sim_id ".interface.png")
+    
+    ;; Generate the "Agents with Information" plot as a real PNG via matplotlib
+    py:run (word
+      "import pandas as pd\n"
+      "import matplotlib\nmatplotlib.use('Agg')\n"
+      "import matplotlib.pyplot as plt\n"
+      "df = pd.read_csv('simulation_color_counts.csv')\n"
+      "plt.figure(figsize=(8, 4))\n"
+      "plt.plot(df['tick'], df['blue'],   color='steelblue',  label='Blue')\n"
+      "plt.plot(df['tick'], df['yellow'], color='goldenrod',  label='Yellow')\n"
+      "plt.plot(df['tick'], df['green'],  color='seagreen',   label='Green')\n"
+      "plt.xlabel('Time')\n"
+      "plt.ylabel('Number')\n"
+      "plt.title('Agents with Information')\n"
+      "plt.legend()\n"
+      "plt.tight_layout()\n"
+      "plt.savefig('output/' + sim_id_str + '.agents_plot.png', dpi=150)\n"
+      "plt.close()"
+    )
 
     stop
   ]
