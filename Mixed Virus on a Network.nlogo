@@ -6,6 +6,13 @@ turtles-own
   virus-check-timer   ;; number of ticks since this turtle's last virus-check
 ]
 
+globals [
+  csv-file-name  ;; path to the live CSV being written during a run
+  sim-id         ;; unique run identifier built from slider values
+]
+
+extensions [ py ]
+
 ;;=============================================================
 ;; Derived-state helpers (not stored, computed on demand)
 ;;=============================================================
@@ -48,6 +55,8 @@ end
 
 to setup
   clear-all
+  py:setup py:python3
+  random-seed Seed  ;; apply seed before any stochastic step
   setup-nodes
   setup-spatially-clustered-network
   ;; Seed blue infections (initial-outbreak-size nodes)
@@ -65,6 +74,21 @@ to setup
     update-color
   ]
   ask links [ set color white ]
+
+  ;; Initialise CSV tracking (matching SISMO_V12_FS pattern)
+  set sim-id (word "nodes=" number-of-nodes
+                   " deg=" average-node-degree
+                   " blue=" initial-outbreak-size
+                   " yellow=" initial-yellow-size
+                   " spread=" virus-spread-chance
+                   " seed=" Seed)
+  set csv-file-name "output_virus/simulation_color_counts.csv"
+  py:run "import os\nif not os.path.exists('output_virus'): os.makedirs('output_virus')"
+  if file-exists? csv-file-name [ file-delete csv-file-name ]
+  file-open csv-file-name
+  file-print "tick,blue,yellow,green,uninformed"
+  file-close
+
   reset-ticks
 end
 
@@ -106,7 +130,12 @@ end
 
 to go
   ;; Stop when every node is Mixed (fully saturated)
-  if all? turtles [state-M?] [ stop ]
+  if all? turtles [state-M?]
+  [
+    record-color-counts
+    save-results
+    stop
+  ]
   ask turtles
   [
     set virus-check-timer virus-check-timer + 1
@@ -114,6 +143,7 @@ to go
       [ set virus-check-timer 0 ]
   ]
   spread-virus
+  record-color-counts
   tick
 end
 
@@ -138,6 +168,63 @@ to spread-virus
       ]
     ]
   ]
+end
+
+;;=============================================================
+;; Tracking & Export  (mirrors SISMO_V12_FS pattern)
+;;=============================================================
+
+;; Append one row to the live CSV
+to record-color-counts
+  let n-blue   count turtles with [state-B?]
+  let n-yellow count turtles with [state-Y?]
+  let n-green  count turtles with [state-M?]
+  let n-uninf  count turtles with [state-U?]
+  file-open csv-file-name
+  file-print (word ticks "," n-blue "," n-yellow "," n-green "," n-uninf)
+  file-close
+end
+
+;; Save CSV copy + simview + matplotlib plot + interface screenshot
+;; into output_virus/  -- safe to call any time (e.g. from Snapshot button)
+to save-results
+  py:set "sim_id_str" sim-id
+
+  ;; 1. CSV -- copy live file to a named snapshot (mirrors SISMO_V12_FS)
+  py:run (word "import shutil\nshutil.copy('" csv-file-name "', 'output_virus/' + sim_id_str + '.color_counts.csv')")
+
+  ;; 2. World view (simview)
+  export-view (word "output_virus/" sim-id ".simview.png")
+
+  ;; 3. matplotlib plot (matches SISMO_V12_FS style)
+  py:run (word
+    "import pandas as pd\n"
+    "import matplotlib\nmatplotlib.use('Agg')\n"
+    "import matplotlib.pyplot as plt\n"
+    "df = pd.read_csv('" csv-file-name "')\n"
+    "plt.figure(figsize=(8, 4))\n"
+    "plt.plot(df['tick'], df['blue'],        color='steelblue',  label='Blue')\n"
+    "plt.plot(df['tick'], df['yellow'],      color='goldenrod',  label='Yellow')\n"
+    "plt.plot(df['tick'], df['green'],       color='seagreen',   label='Mixed')\n"
+    "plt.plot(df['tick'], df['uninformed'],  color='lightgray',  label='Uninformed')\n"
+    "plt.xlabel('Time')\n"
+    "plt.ylabel('Number of nodes')\n"
+    "plt.title('Mixed Virus on a Network')\n"
+    "plt.legend()\n"
+    "plt.tight_layout()\n"
+    "plt.savefig('output_virus/' + sim_id_str + '.agents_plot.png', dpi=150)\n"
+    "plt.close()"
+  )
+
+  ;; 4. Full interface screenshot
+  export-interface (word "output_virus/" sim-id ".interface.png")
+
+  print (word "Results saved to output_virus/ with id: " sim-id)
+end
+
+;; Snapshot button handler – saves current state without stopping the run
+to snapshot
+  save-results
 end
 
 
@@ -249,6 +336,34 @@ NIL
 NIL
 NIL
 0
+
+BUTTON
+5
+535
+260
+570
+Snapshot
+snapshot
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+0
+
+INPUTBOX
+5
+575
+130
+635
+Seed
+999.0
+1
+0
+Number
 
 PLOT
 5
