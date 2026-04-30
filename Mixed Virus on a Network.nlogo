@@ -151,10 +151,8 @@ end
 to go
   ;; Stop condition based on saturation threshold
   let target-non-m 0
-  if use-saturation-threshold? [
-    set target-non-m round (number-of-nodes * (100 - saturation-threshold) / 100)
-  ]
-  
+  set target-non-m round (number-of-nodes * (100 - saturation-threshold) / 100)
+    
   if count turtles with [not state-M?] <= target-non-m
   [
     record-color-counts
