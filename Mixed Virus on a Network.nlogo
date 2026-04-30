@@ -58,7 +58,13 @@ to setup
   py:setup py:python3
   random-seed Seed  ;; apply seed before any stochastic step
   setup-nodes
+  ;; Build network and regenerate if any isolated subgraphs are found
   setup-spatially-clustered-network
+  while [ not network-connected? ]
+  [
+    ask links [ die ]
+    setup-spatially-clustered-network
+  ]
   ;; Seed blue infections (initial-outbreak-size nodes)
   ask n-of initial-outbreak-size turtles
   [
@@ -122,6 +128,20 @@ to setup-spatially-clustered-network
   [
     layout-spring turtles links 0.3 (world-width / (sqrt number-of-nodes)) 1
   ]
+end
+
+;; BFS flood-fill: returns true iff all nodes form a single connected component
+to-report network-connected?
+  if count turtles = 0 [ report true ]
+  let visited (turtle-set one-of turtles)
+  let frontier visited
+  while [ any? frontier ]
+  [
+    let nbrs (turtle-set [link-neighbors] of frontier)
+    set frontier nbrs with [ not member? self visited ]
+    set visited (turtle-set visited frontier)
+  ]
+  report count visited = count turtles
 end
 
 ;;=============================================================
