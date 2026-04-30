@@ -1,16 +1,69 @@
 turtles-own
 [
-  infected?           ;; if true, the turtle is infectious
-  resistant?          ;; if true, the turtle can't be infected
+  infected-blue?      ;; if true, the turtle carries the blue infection
+  infected-yellow?    ;; if true, the turtle carries the yellow infection
+  resistant?          ;; reserved for future use – not used in any logic
   virus-check-timer   ;; number of ticks since this turtle's last virus-check
 ]
+
+;;=============================================================
+;; Derived-state helpers (not stored, computed on demand)
+;;=============================================================
+
+to-report state-U? ;; true when uninformed
+  report (not infected-blue?) and (not infected-yellow?)
+end
+
+to-report state-B? ;; blue only
+  report infected-blue? and (not infected-yellow?)
+end
+
+to-report state-Y? ;; yellow only
+  report (not infected-blue?) and infected-yellow?
+end
+
+to-report state-M? ;; mixed (both)
+  report infected-blue? and infected-yellow?
+end
+
+;; any infection present
+to-report infected?
+  report infected-blue? or infected-yellow?
+end
+
+;;=============================================================
+;; Visualisation
+;;=============================================================
+
+to update-color  ;; turtle procedure – call after any flag change
+  ifelse state-M? [ set color green  ] [
+  ifelse state-B? [ set color blue   ] [
+  ifelse state-Y? [ set color yellow ] [
+    set color white ] ] ]  ;; U
+end
+
+;;=============================================================
+;; Setup
+;;=============================================================
 
 to setup
   clear-all
   setup-nodes
   setup-spatially-clustered-network
+  ;; Seed blue infections (initial-outbreak-size nodes)
   ask n-of initial-outbreak-size turtles
-    [ become-infected ]
+  [
+    set infected-blue? true
+    update-color
+  ]
+  ;; Seed yellow infections (initial-yellow-size nodes not yet blue)
+  let blue-candidates turtles with [not infected-blue?]
+  let yellow-count min (list initial-yellow-size (count blue-candidates))
+  ask n-of yellow-count blue-candidates
+  [
+    set infected-yellow? true
+    update-color
+  ]
   ask links [ set color white ]
   reset-ticks
 end
@@ -21,7 +74,10 @@ to setup-nodes
   [
     ; for visual reasons, we don't put any nodes *too* close to the edges
     setxy (random-xcor * 0.95) (random-ycor * 0.95)
-    become-susceptible
+    set infected-blue?   false
+    set infected-yellow? false
+    set resistant?       false   ;; reserved, not used
+    set color white              ;; uninformed
     set virus-check-timer random virus-check-frequency
   ]
 end
@@ -44,54 +100,42 @@ to setup-spatially-clustered-network
   ]
 end
 
+;;=============================================================
+;; Main loop
+;;=============================================================
+
 to go
-  if all? turtles [not infected?]
-    [ stop ]
+  ;; Stop when every node is Mixed (fully saturated)
+  if all? turtles [state-M?] [ stop ]
   ask turtles
   [
-     set virus-check-timer virus-check-timer + 1
-     if virus-check-timer >= virus-check-frequency
-       [ set virus-check-timer 0 ]
+    set virus-check-timer virus-check-timer + 1
+    if virus-check-timer >= virus-check-frequency
+      [ set virus-check-timer 0 ]
   ]
   spread-virus
-  do-virus-checks
   tick
 end
 
-to become-infected  ;; turtle procedure
-  set infected? true
-  set resistant? false
-  set color red
-end
-
-to become-susceptible  ;; turtle procedure
-  set infected? false
-  set resistant? false
-  set color blue
-end
-
-to become-resistant  ;; turtle procedure
-  set infected? false
-  set resistant? true
-  set color gray
-  ask my-links [ set color gray - 2 ]
-end
+;;=============================================================
+;; Transmission
+;;=============================================================
 
 to spread-virus
+  ;; Each infected turtle tries to pass its flags to each neighbour
   ask turtles with [infected?]
-    [ ask link-neighbors with [not resistant?]
-        [ if random-float 100 < virus-spread-chance
-            [ become-infected ] ] ]
-end
-
-to do-virus-checks
-  ask turtles with [infected? and virus-check-timer = 0]
   [
-    if random 100 < recovery-chance
+    let b? infected-blue?
+    let y? infected-yellow?
+    ask link-neighbors
     [
-      ifelse random 100 < gain-resistance-chance
-        [ become-resistant ]
-        [ become-susceptible ]
+      ;; Each flag is transmitted independently at the configured chance
+      if random-float 100 < virus-spread-chance
+      [
+        if b? [ set infected-blue?   true ]
+        if y? [ set infected-yellow? true ]
+        update-color
+      ]
     ]
   ]
 end
@@ -173,10 +217,10 @@ virus-spread-chance
 HORIZONTAL
 
 BUTTON
-25
-125
-120
-165
+5
+495
+130
+530
 NIL
 setup
 NIL
@@ -191,9 +235,9 @@ NIL
 
 BUTTON
 135
-125
-230
-165
+495
+260
+530
 NIL
 go
 T
@@ -222,9 +266,10 @@ true
 true
 "" ""
 PENS
-"susceptible" 1.0 0 -13345367 true "" "plot (count turtles with [not infected? and not resistant?]) / (count turtles) * 100"
-"infected" 1.0 0 -2674135 true "" "plot (count turtles with [infected?]) / (count turtles) * 100"
-"resistant" 1.0 0 -7500403 true "" "plot (count turtles with [resistant?]) / (count turtles) * 100"
+"U (uninformed)" 1.0 0 -1 true "" "plot (count turtles with [state-U?]) / (count turtles) * 100"
+"B (blue only)" 1.0 0 -13345367 true "" "plot (count turtles with [state-B?]) / (count turtles) * 100"
+"Y (yellow only)" 1.0 0 -1184463 true "" "plot (count turtles with [state-Y?]) / (count turtles) * 100"
+"M (mixed)" 1.0 0 -10899396 true "" "plot (count turtles with [state-M?]) / (count turtles) * 100"
 
 SLIDER
 25
@@ -263,7 +308,22 @@ SLIDER
 118
 initial-outbreak-size
 initial-outbreak-size
+0
+number-of-nodes
+3.0
 1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+25
+120
+230
+153
+initial-yellow-size
+initial-yellow-size
+0
 number-of-nodes
 3.0
 1
