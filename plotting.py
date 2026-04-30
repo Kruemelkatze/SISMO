@@ -71,17 +71,33 @@ def load_virus_runs(files):
 
 
 # === Mittelwert und Standardabweichung berechnen ===
-def mean_std_runs(runs):
+def mean_std_runs(runs, normalize_time=True):
     if len(runs) == 0:
         raise ValueError("No runs available.")
 
-    # Falls Runs unterschiedliche Länge haben: auf kürzeste Länge kürzen
-    min_len = min(len(r) for r in runs)
-    runs = np.array([r[:min_len] for r in runs])
+    # Find the maximum length across all runs
+    max_len = max(len(r) for r in runs)
+    
+    # Pad shorter runs with their last value (forward fill)
+    padded_runs = []
+    for r in runs:
+        if len(r) < max_len:
+            # Pad with the last value to simulate state persistence
+            pad_val = r[-1] if len(r) > 0 else 0
+            padded_r = np.pad(r, (0, max_len - len(r)), 'constant', constant_values=pad_val)
+            padded_runs.append(padded_r)
+        else:
+            padded_runs.append(r)
+            
+    runs = np.array(padded_runs)
 
     mean_M = np.mean(runs, axis=0)
     std_M = np.std(runs, axis=0)
-    time = np.arange(min_len)
+    
+    if normalize_time and max_len > 1:
+        time = np.linspace(0, 1, max_len)
+    else:
+        time = np.arange(max_len)
 
     return time, mean_M, std_M
 
@@ -122,7 +138,7 @@ plt.fill_between(
     alpha=0.2
 )
 
-plt.xlabel("Time step")
+plt.xlabel("Normalized simulation time [0, 1]")
 plt.ylabel("Mixing ratio M(t)")
 plt.title("Modified Virus Network: information mixing")
 plt.ylim(0, 1)
@@ -181,7 +197,7 @@ plt.fill_between(
     alpha=0.2
 )
 
-plt.xlabel("Time step")
+plt.xlabel("Normalized simulation time [0, 1]")
 plt.ylabel("Mixing ratio M(t)")
 plt.title("SISMO vs Modified Virus Network")
 plt.ylim(0, 1)

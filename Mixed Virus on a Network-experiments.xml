@@ -1,0 +1,128 @@
+
+<experiments>
+  <experiment name="experiment 5-5" repetitions="1" sequentialRunOrder="true" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <metrics>
+      <metric>count turtles</metric>
+    </metrics>
+    <constants>
+      <enumeratedValueSet variable="initial-yellow-size">
+        <value value="5"></value>
+      </enumeratedValueSet>
+      <enumeratedValueSet variable="Seed">
+        <value value="1000"></value>
+        <value value="1001"></value>
+        <value value="1002"></value>
+        <value value="1003"></value>
+        <value value="1004"></value>
+      </enumeratedValueSet>
+      <enumeratedValueSet variable="initial-outbreak-size">
+        <value value="5"></value>
+      </enumeratedValueSet>
+      <enumeratedValueSet variable="number-of-nodes">
+        <value value="250"></value>
+      </enumeratedValueSet>
+    </constants>
+  </experiment>
+  <experiment name="experiment 6-4" repetitions="1" sequentialRunOrder="true" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <metrics>
+      <metric>count turtles</metric>
+    </metrics>
+    <constants>
+      <enumeratedValueSet variable="initial-yellow-size">
+        <value value="6"></value>
+      </enumeratedValueSet>
+      <enumeratedValueSet variable="Seed">
+        <value value="1000"></value>
+        <value value="1001"></value>
+        <value value="1002"></value>
+        <value value="1003"></value>
+        <value value="1004"></value>
+      </enumeratedValueSet>
+      <enumeratedValueSet variable="initial-outbreak-size">
+        <value value="4"></value>
+      </enumeratedValueSet>
+      <enumeratedValueSet variable="number-of-nodes">
+        <value value="250"></value>
+      </enumeratedValueSet>
+    </constants>
+  </experiment>
+  <experiment name="experiment 7-3" repetitions="1" sequentialRunOrder="true" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <metrics>
+      <metric>count turtles</metric>
+    </metrics>
+    <constants>
+      <enumeratedValueSet variable="initial-yellow-size">
+        <value value="7"></value>
+      </enumeratedValueSet>
+      <enumeratedValueSet variable="Seed">
+        <value value="1000"></value>
+        <value value="1001"></value>
+        <value value="1002"></value>
+        <value value="1003"></value>
+        <value value="1004"></value>
+      </enumeratedValueSet>
+      <enumeratedValueSet variable="initial-outbreak-size">
+        <value value="3"></value>
+      </enumeratedValueSet>
+      <enumeratedValueSet variable="number-of-nodes">
+        <value value="250"></value>
+      </enumeratedValueSet>
+    </constants>
+  </experiment>
+  <experiment name="experiment 3-7" repetitions="1" sequentialRunOrder="true" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <metrics>
+      <metric>count turtles</metric>
+    </metrics>
+    <constants>
+      <enumeratedValueSet variable="initial-yellow-size">
+        <value value="3"></value>
+      </enumeratedValueSet>
+      <enumeratedValueSet variable="Seed">
+        <value value="1000"></value>
+        <value value="1001"></value>
+        <value value="1002"></value>
+        <value value="1003"></value>
+        <value value="1004"></value>
+      </enumeratedValueSet>
+      <enumeratedValueSet variable="initial-outbreak-size">
+        <value value="7"></value>
+      </enumeratedValueSet>
+      <enumeratedValueSet variable="number-of-nodes">
+        <value value="250"></value>
+      </enumeratedValueSet>
+    </constants>
+  </experiment>
+  <experiment name="experiment 4-6" repetitions="1" sequentialRunOrder="true" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <metrics>
+      <metric>count turtles</metric>
+    </metrics>
+    <constants>
+      <enumeratedValueSet variable="initial-yellow-size">
+        <value value="4"></value>
+      </enumeratedValueSet>
+      <enumeratedValueSet variable="Seed">
+        <value value="1000"></value>
+        <value value="1001"></value>
+        <value value="1002"></value>
+        <value value="1003"></value>
+        <value value="1004"></value>
+      </enumeratedValueSet>
+      <enumeratedValueSet variable="initial-outbreak-size">
+        <value value="6"></value>
+      </enumeratedValueSet>
+      <enumeratedValueSet variable="number-of-nodes">
+        <value value="250"></value>
+      </enumeratedValueSet>
+    </constants>
+  </experiment>
+</experiments>

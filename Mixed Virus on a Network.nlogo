@@ -149,8 +149,13 @@ end
 ;;=============================================================
 
 to go
-  ;; Stop when every node is Mixed (fully saturated)
-  if all? turtles [state-M?]
+  ;; Stop condition based on saturation threshold
+  let target-non-m 0
+  if use-saturation-threshold? [
+    set target-non-m round (number-of-nodes * (100 - saturation-threshold) / 100)
+  ]
+  
+  if count turtles with [not state-M?] <= target-non-m
   [
     record-color-counts
     save-results
@@ -384,6 +389,32 @@ Seed
 1
 0
 Number
+
+SWITCH
+5
+640
+260
+673
+use-saturation-threshold?
+use-saturation-threshold?
+1
+1
+-1000
+
+SLIDER
+5
+675
+260
+708
+saturation-threshold
+saturation-threshold
+0.0
+100.0
+99.0
+1.0
+1
+%
+HORIZONTAL
 
 PLOT
 5
