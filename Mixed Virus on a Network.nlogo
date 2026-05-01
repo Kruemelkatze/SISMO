@@ -1,77 +1,68 @@
 turtles-own
 [
-  infected-blue?      ;; if true, the turtle carries the blue infection
-  infected-yellow?    ;; if true, the turtle carries the yellow infection
-  resistant?          ;; reserved for future use – not used in any logic
-  virus-check-timer   ;; number of ticks since this turtle's last virus-check
+  infected-blue?
+  infected-yellow?
+  resistant? ; unused for now
+  virus-check-timer
 ]
 
 globals [
-  csv-file-name  ;; path to the live CSV being written during a run
-  sim-id         ;; unique run identifier built from slider values
+  csv-file-name
+  sim-id
 ]
 
 extensions [ py ]
 
-;;=============================================================
-;; Derived-state helpers (not stored, computed on demand)
-;;=============================================================
-
-to-report state-U? ;; true when uninformed
+; some helpers to check the state of a node
+to-report state-U?
   report (not infected-blue?) and (not infected-yellow?)
 end
 
-to-report state-B? ;; blue only
+to-report state-B?
   report infected-blue? and (not infected-yellow?)
 end
 
-to-report state-Y? ;; yellow only
+to-report state-Y?
   report (not infected-blue?) and infected-yellow?
 end
 
-to-report state-M? ;; mixed (both)
+to-report state-M?
   report infected-blue? and infected-yellow?
 end
 
-;; any infection present
+; any infection present, dont know if we need it
 to-report infected?
   report infected-blue? or infected-yellow?
 end
 
-;;=============================================================
-;; Visualisation
-;;=============================================================
-
-to update-color  ;; turtle procedure – call after any flag change
+; update color of current node
+to update-color
   ifelse state-M? [ set color green  ] [
   ifelse state-B? [ set color blue   ] [
   ifelse state-Y? [ set color yellow ] [
-    set color white ] ] ]  ;; U
+    set color white ] ] ]
 end
-
-;;=============================================================
-;; Setup
-;;=============================================================
 
 to setup
   clear-all
   py:setup py:python3
-  random-seed Seed  ;; apply seed before any stochastic step
+  random-seed Seed  ; seed, to keep aligned with SISMO
   setup-nodes
-  ;; Build network and regenerate if any isolated subgraphs are found
+
+  ; regenerate network if we have islands
   setup-spatially-clustered-network
   while [ not network-connected? ]
   [
     ask links [ die ]
     setup-spatially-clustered-network
   ]
-  ;; Seed blue infections (initial-outbreak-size nodes)
+  ; blue
   ask n-of initial-outbreak-size turtles
   [
     set infected-blue? true
     update-color
   ]
-  ;; Seed yellow infections (initial-yellow-size nodes not yet blue)
+  ; yellow, excluding already blue ones
   let blue-candidates turtles with [not infected-blue?]
   let yellow-count min (list initial-yellow-size (count blue-candidates))
   ask n-of yellow-count blue-candidates
@@ -81,7 +72,7 @@ to setup
   ]
   ask links [ set color white ]
 
-  ;; Initialise CSV tracking (matching SISMO_V12_FS pattern)
+  ; csv tracking (same as SISMO)
   set sim-id (word "nodes=" number-of-nodes
                    " deg=" average-node-degree
                    " blue=" initial-outbreak-size
@@ -130,7 +121,7 @@ to setup-spatially-clustered-network
   ]
 end
 
-;; BFS flood-fill: returns true iff all nodes form a single connected component
+; BFS 
 to-report network-connected?
   if count turtles = 0 [ report true ]
   let visited (turtle-set one-of turtles)
@@ -144,12 +135,8 @@ to-report network-connected?
   report count visited = count turtles
 end
 
-;;=============================================================
-;; Main loop
-;;=============================================================
-
 to go
-  ;; Stop condition based on saturation threshold
+  ; 99% threshold against long tails
   let target-non-m 0
   set target-non-m round (number-of-nodes * (100 - saturation-threshold) / 100)
     
@@ -170,19 +157,13 @@ to go
   tick
 end
 
-;;=============================================================
-;; Transmission
-;;=============================================================
-
 to spread-virus
-  ;; Each infected turtle tries to pass its flags to each neighbour
   ask turtles with [infected?]
   [
     let b? infected-blue?
     let y? infected-yellow?
     ask link-neighbors
     [
-      ;; Each flag is transmitted independently at the configured chance
       if random-float 100 < virus-spread-chance
       [
         if b? [ set infected-blue?   true ]
@@ -193,11 +174,6 @@ to spread-virus
   ]
 end
 
-;;=============================================================
-;; Tracking & Export  (mirrors SISMO_V12_FS pattern)
-;;=============================================================
-
-;; Append one row to the live CSV
 to record-color-counts
   let n-blue   count turtles with [state-B?]
   let n-yellow count turtles with [state-Y?]
@@ -208,18 +184,17 @@ to record-color-counts
   file-close
 end
 
-;; Save CSV copy + simview + matplotlib plot + interface screenshot
-;; into output_virus/  -- safe to call any time (e.g. from Snapshot button)
+; file reporting
 to save-results
   py:set "sim_id_str" sim-id
 
-  ;; 1. CSV -- copy live file to a named snapshot (mirrors SISMO_V12_FS)
+  ; csv
   py:run (word "import shutil\nshutil.copy('" csv-file-name "', 'output_virus/' + sim_id_str + '.color_counts.csv')")
 
-  ;; 2. World view (simview)
+  ; simview
   export-view (word "output_virus/" sim-id ".simview.png")
 
-  ;; 3. matplotlib plot (matches SISMO_V12_FS style)
+  ; plot
   py:run (word
     "import pandas as pd\n"
     "import matplotlib\nmatplotlib.use('Agg')\n"
@@ -239,13 +214,12 @@ to save-results
     "plt.close()"
   )
 
-  ;; 4. Full interface screenshot
+  ; interface, just in case
   export-interface (word "output_virus/" sim-id ".interface.png")
 
   print (word "Results saved to output_virus/ with id: " sim-id)
 end
 
-;; Snapshot button handler – saves current state without stopping the run
 to snapshot
   save-results
 end
