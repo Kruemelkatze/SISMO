@@ -69,14 +69,20 @@ plt.figure(figsize=(8, 6))
 summary_rows = []
 
 for food, runs in sorted(data_by_food.items()):
-    # Falls Runs unterschiedliche Länge haben: auf kürzeste Länge kürzen
-    min_len = min(len(r) for r in runs)
-    runs = np.array([r[:min_len] for r in runs])
+    # Falls Runs unterschiedliche Länge haben: auf maximale Länge mit letztem Wert auffüllen
+    max_len = max(len(r) for r in runs)
+    padded_runs = []
+    for r in runs:
+        if len(r) < max_len:
+            padded_runs.append(np.pad(r, (0, max_len - len(r)), mode='edge'))
+        else:
+            padded_runs.append(r)
+    runs = np.array(padded_runs)
 
     mean_M = np.mean(runs, axis=0)
     std_M = np.std(runs, axis=0)
 
-    time = np.arange(min_len)
+    time = np.arange(max_len)
 
     # Mittelwertkurve
     plt.plot(
@@ -126,6 +132,7 @@ plt.xlabel("Time step")
 plt.ylabel("Mixing ratio M(t)")
 plt.title("Information mixing for different numbers of food sources")
 plt.ylim(0, 1)
+plt.axhline(y=0.5, color='gray', linestyle=':', alpha=0.7, zorder=1)
 plt.legend()
 plt.grid(True, linestyle="--", alpha=0.5)
 plt.tight_layout()
@@ -138,7 +145,7 @@ print("Saved plot as mixing_food_comparison.png")
 
 # === Plot: Small Multiples (Faceted Plot) ===
 use_common_x_range = True  # Flag: Use max length across all simulations for x-axis
-override_x_range = 50      # If > 0, overrides use_common_x_range and forces this x max
+override_x_range = 0      # If > 0, overrides use_common_x_range and forces this x max
 
 effective_sharex = use_common_x_range or (override_x_range > 0)
 
@@ -160,12 +167,18 @@ elif use_common_x_range:
 
 for i, (food, runs) in enumerate(sorted(data_by_food.items())):
     ax = axes[i]
-    min_len = min(len(r) for r in runs)
-    runs_arr = np.array([r[:min_len] for r in runs])
+    max_len = max(len(r) for r in runs)
+    padded_runs = []
+    for r in runs:
+        if len(r) < max_len:
+            padded_runs.append(np.pad(r, (0, max_len - len(r)), mode='edge'))
+        else:
+            padded_runs.append(r)
+    runs_arr = np.array(padded_runs)
     
     mean_M = np.mean(runs_arr, axis=0)
     std_M = np.std(runs_arr, axis=0)
-    time = np.arange(min_len)
+    time = np.arange(max_len)
     
     color = f"C{i % 10}"
     ax.plot(time, mean_M, linewidth=2, color=color)
@@ -173,6 +186,7 @@ for i, (food, runs) in enumerate(sorted(data_by_food.items())):
     
     ax.set_title(f"{food} food sources")
     ax.set_ylim(0, 1)
+    ax.axhline(y=0.5, color='gray', linestyle=':', alpha=0.7, zorder=1)
     if override_x_range > 0 or use_common_x_range:
         ax.set_xlim(0, global_max_len)
         
