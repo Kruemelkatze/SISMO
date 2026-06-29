@@ -3,6 +3,38 @@ import matplotlib.pyplot as plt
 import glob
 import numpy as np
 import re
+import seaborn as sns
+import scienceplots  # noqa: F401
+
+# === Configuration ===
+SHOW_PLOTS = False  # Set to True to display plots interactively
+USE_NEW_STYLING = False  # Toggle between new (higher DPI, larger fonts) and old styling
+
+FILL_WITH_BORDERS_ONLY = False  # Set to True to replace solid fills with thin dotted boundary lines
+LINE_WIDTH = 2
+
+plt.rcParams.update({
+        'font.size': 18,
+        'axes.titlesize': 16,
+        'axes.labelsize': 14,
+        'xtick.labelsize': 12,
+        'ytick.labelsize': 12,
+        'legend.fontsize': 12
+    })
+
+if USE_NEW_STYLING:
+    plt.style.use(["science", "no-latex"])
+    sns.set_palette("colorblind")
+    plt.rcParams.update({
+        'figure.dpi': 300,
+        'font.size': 18,
+        'axes.titlesize': 16,
+        'axes.labelsize': 14,
+        'xtick.labelsize': 12,
+        'ytick.labelsize': 12,
+        'legend.fontsize': 12
+    })
+    plt.rcParams.update({'figure.dpi': 100})  # Fix for plt.show() creating giant windows
 
 # === Pfad zu deinen CSV-Dateien ===
 files = glob.glob(
@@ -85,20 +117,26 @@ for food, runs in sorted(data_by_food.items()):
     time = np.arange(max_len)
 
     # Mittelwertkurve
-    plt.plot(
+    line, = plt.plot(
         time,
         mean_M,
-        linewidth=2,
+        linewidth=LINE_WIDTH,
         label=f"{food} food sources"
     )
+    color = line.get_color()
 
     # Streuungsband
-    plt.fill_between(
-        time,
-        np.maximum(mean_M - std_M, 0),
-        np.minimum(mean_M + std_M, 1),
-        alpha=0.2
-    )
+    if FILL_WITH_BORDERS_ONLY:
+        plt.plot(time, np.maximum(mean_M - std_M, 0), color=color, linestyle=":", linewidth=1, alpha=0.7)
+        plt.plot(time, np.minimum(mean_M + std_M, 1), color=color, linestyle=":", linewidth=1, alpha=0.7)
+    else:
+        plt.fill_between(
+            time,
+            np.maximum(mean_M - std_M, 0),
+            np.minimum(mean_M + std_M, 1),
+            color=color,
+            alpha=0.2
+        )
 
     # === t0.5 / t0.9 pro Run berechnen ===
     t05_values = []
@@ -138,7 +176,8 @@ plt.grid(True, linestyle="--", alpha=0.5)
 plt.tight_layout()
 
 plt.savefig("mixing_food_comparison.png", dpi=300)
-plt.show()
+if SHOW_PLOTS:
+    plt.show()
 
 print("Saved plot as mixing_food_comparison.png")
 
@@ -181,10 +220,15 @@ for i, (food, runs) in enumerate(sorted(data_by_food.items())):
     time = np.arange(max_len)
     
     color = f"C{i % 10}"
-    ax.plot(time, mean_M, linewidth=2, color=color)
-    ax.fill_between(time, np.maximum(mean_M - std_M, 0), np.minimum(mean_M + std_M, 1), alpha=0.2, color=color)
+    ax.plot(time, mean_M, linewidth=LINE_WIDTH, color=color)
     
-    ax.set_title(f"{food} food sources")
+    if FILL_WITH_BORDERS_ONLY:
+        ax.plot(time, np.maximum(mean_M - std_M, 0), color=color, linestyle=":", linewidth=1, alpha=0.7)
+        ax.plot(time, np.minimum(mean_M + std_M, 1), color=color, linestyle=":", linewidth=1, alpha=0.7)
+    else:
+        ax.fill_between(time, np.maximum(mean_M - std_M, 0), np.minimum(mean_M + std_M, 1), alpha=0.2, color=color)
+    
+    ax.set_title(f"{food} information sources")
     ax.set_ylim(0, 1)
     ax.axhline(y=0.5, color='gray', linestyle=':', alpha=0.7, zorder=1)
     if override_x_range > 0 or use_common_x_range:
@@ -205,11 +249,12 @@ for i, (food, runs) in enumerate(sorted(data_by_food.items())):
 for j in range(num_plots, len(axes)):
     fig.delaxes(axes[j])
 
-plt.suptitle("Information mixing per food source", y=1.02)
+#plt.suptitle("Information mixing per information source", y=1.02)
 plt.tight_layout()
 
 plt.savefig("mixing_food_comparison_faceted.png", dpi=300, bbox_inches="tight")
-plt.show()
+if SHOW_PLOTS:
+    plt.show()
 
 print("Saved plot as mixing_food_comparison_faceted.png")
 
@@ -241,7 +286,7 @@ plt.errorbar(
     valid_t05["Mean t0.5"],
     yerr=valid_t05["Std t0.5"],
     marker="o",
-    linewidth=2,
+    linewidth=LINE_WIDTH,
     capsize=4
 )
 
@@ -252,7 +297,8 @@ plt.grid(True, linestyle="--", alpha=0.5)
 plt.tight_layout()
 
 plt.savefig("time_to_50_mixing.png", dpi=300)
-plt.show()
+if SHOW_PLOTS:
+    plt.show()
 
 print("Saved plot as time_to_50_mixing.png")
 
@@ -264,7 +310,7 @@ plt.errorbar(
     summary["Mean final M(T)"],
     yerr=summary["Std final M(T)"],
     marker="o",
-    linewidth=2,
+    linewidth=LINE_WIDTH,
     capsize=4
 )
 
@@ -276,6 +322,7 @@ plt.grid(True, linestyle="--", alpha=0.5)
 plt.tight_layout()
 
 plt.savefig("final_mixing_by_food.png", dpi=300)
-plt.show()
+if SHOW_PLOTS:
+    plt.show()
 
 print("Saved plot as final_mixing_by_food.png")

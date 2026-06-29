@@ -18,11 +18,11 @@ if not os.path.exists(plot_folder):
     os.makedirs(plot_folder)
 
 sismo_files = glob.glob(
-    r"./output/*.color_counts.csv"
+    r"./ACSOS/ACSOS_SISMO/*.color_counts.csv"
 )
 
 virus_files = glob.glob(
-    r"./output_virus/*" + virus_file_filter + "*.color_counts.csv"
+    r"./ACSOS/ACSOS_VIRUS/*" + virus_file_filter + "*.color_counts.csv"
 )
 
 print(f"Found {len(sismo_files)} SISMO files.")
