@@ -1,5 +1,7 @@
 ; Auxiliary procedure to test the A* algorithm between two random nodes of the network
 to run-a-star [x-start y-start x-end y-end]
+  reset-timer
+  let found-path-length -1
   ask networkpoints [set color blue set size .5]
  
   ;;print word "networkpoints" count networkpoints
@@ -15,10 +17,11 @@ to run-a-star [x-start y-start x-end y-end]
     if goal != nobody [
       ask goal [set color green set size 1]
   
-      let path (A* start goal)    
+      let path (A* start goal)
       if path != false
-      [         
-        let start-food one-of foods with [xcor = x-start and  ycor = y-start]  
+      [
+        set found-path-length length path
+        let start-food one-of foods with [xcor = x-start and  ycor = y-start]
         let end-food one-of foods with [xcor = x-end and  ycor = y-end] 
           
         highlight-path path
@@ -40,7 +43,7 @@ to run-a-star [x-start y-start x-end y-end]
     print ""
 
   ]
-  
+  log-network-timing "a-star" -1 -1 timer -1 found-path-length
 end
 
 ; Searcher report to compute the heuristic for this searcher: in this case, one good option

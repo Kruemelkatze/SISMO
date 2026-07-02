@@ -8,15 +8,15 @@ import scienceplots  # noqa: F401
 
 # === Configuration ===
 SHOW_PLOTS = False  # Set to True to display plots interactively
-USE_NEW_STYLING = False  # Toggle between new (higher DPI, larger fonts) and old styling
+USE_NEW_STYLING = True  # Toggle between new (higher DPI, larger fonts) and old styling
 
 FILL_WITH_BORDERS_ONLY = False  # Set to True to replace solid fills with thin dotted boundary lines
 LINE_WIDTH = 2
 
 plt.rcParams.update({
-        'font.size': 18,
-        'axes.titlesize': 16,
-        'axes.labelsize': 14,
+        'font.size': 14,
+        'axes.titlesize': 14,
+        'axes.labelsize': 12,
         'xtick.labelsize': 12,
         'ytick.labelsize': 12,
         'legend.fontsize': 12
@@ -189,14 +189,37 @@ override_x_range = 0      # If > 0, overrides use_common_x_range and forces this
 effective_sharex = use_common_x_range or (override_x_range > 0)
 
 num_plots = len(data_by_food)
-if num_plots <= 5:
+
+# Special case: exactly 5 food levels -> 3 plots on top row, 2 centered on bottom row
+special_5_layout = (num_plots == 5)
+
+if special_5_layout:
+    rows, cols = 2, 3
+elif num_plots < 5:
     rows, cols = 1, num_plots
 else:
     cols = 3
     rows = (num_plots + cols - 1) // cols
 
-fig, axes = plt.subplots(rows, cols, figsize=(3.5 * cols, 3.5 * rows), sharey=True, sharex=effective_sharex, squeeze=False)
-axes = axes.flatten()
+if special_5_layout:
+    fig = plt.figure(figsize=(3.5 * cols, 3.5 * rows))
+    gs = fig.add_gridspec(2, 6)
+
+    ax0 = fig.add_subplot(gs[0, 0:2])
+    shared_x = ax0 if effective_sharex else None
+    ax1 = fig.add_subplot(gs[0, 2:4], sharex=shared_x, sharey=ax0)
+    ax2 = fig.add_subplot(gs[0, 4:6], sharex=shared_x, sharey=ax0)
+    ax3 = fig.add_subplot(gs[1, 1:3], sharex=shared_x, sharey=ax0)
+    ax4 = fig.add_subplot(gs[1, 3:5], sharex=shared_x, sharey=ax0)
+
+    axes = [ax0, ax1, ax2, ax3, ax4]
+    bottom_indices = {3, 4}   # bottom row -> gets the x-axis label
+    left_indices = {0, 3}    # leftmost plot of each row -> gets the y-axis label
+else:
+    fig, axes = plt.subplots(rows, cols, figsize=(3.5 * cols, 3.5 * rows), sharey=True, sharex=effective_sharex, squeeze=False)
+    axes = axes.flatten()
+    bottom_indices = {i for i in range(num_plots) if i + cols >= num_plots}
+    left_indices = {i for i in range(num_plots) if i % cols == 0}
 
 global_max_len = 0
 if override_x_range > 0:
@@ -236,16 +259,18 @@ for i, (food, runs) in enumerate(sorted(data_by_food.items())):
         
     ax.grid(True, linestyle="--", alpha=0.5)
     
-    # X-Achsen-Label für die untersten Plots jeder Spalte
-    if i + cols >= num_plots:
+    # X-Achsen-Label für die untersten Plots jeder Spalte/Zeile
+    if i in bottom_indices:
         ax.set_xlabel("Time step")
         if override_x_range > 0 or use_common_x_range:
             ax.tick_params(labelbottom=True)
-        
-    if i % cols == 0:
+    elif special_5_layout and effective_sharex:
+        ax.tick_params(labelbottom=False)
+
+    if i in left_indices:
         ax.set_ylabel("Mixing ratio M(t)")
 
-# Verbleibende leere Subplots verstecken
+# Verbleibende leere Subplots verstecken (nur relevant für das reguläre Grid)
 for j in range(num_plots, len(axes)):
     fig.delaxes(axes[j])
 

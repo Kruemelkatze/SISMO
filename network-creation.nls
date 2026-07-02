@@ -43,6 +43,11 @@ to create-pseudopodia-network [breeds]
   ;;py:run "from mp_try import process_intersections"
   py:set "raw_data" coordinates-list
   let pyresult py:runresult"process_intersections(raw_data)"
+  ;; wall-clock time spent marshaling raw_data across the py boundary plus
+  ;; the Python-side O(n^2) intersection compute (see py_intersection_timing.csv
+  ;; for the compute-only breakdown of this same interval)
+  let roundtrip-seconds timer
+  let num-pseudopodia length coordinates-list
   ;;print "after py Script size: "
   ;;print length stats
  ;;print pyresult
@@ -171,9 +176,17 @@ while [ i < length pyresult ] [
   ask links [ set color orange ]   
   set i i + 1
 ]
-  ;;print (word "Execution time: " timer " seconds")
- ; print word "End NETWORK CREATION:" date-and-time
-  ;print timer
+  log-network-timing "network-creation" roundtrip-seconds (timer - roundtrip-seconds) timer num-pseudopodia (length pyresult)
+end
+
+;; Shared timing-log helper for both network-creation (py roundtrip + NetLogo
+;; build-loop phases) and A* (search phase), so both land in one CSV keyed by tick.
+;; roundtrip/build-seconds/num-pseudopodia are -1 where not applicable (A* rows).
+to log-network-timing [event-name roundtrip-seconds build-seconds total-seconds num-pseudopodia num-intersections]
+  file-open network-timing-csv
+  file-print (word ticks "," event-name "," roundtrip-seconds "," build-seconds "," total-seconds ","
+    num-pseudopodia "," count networkpoints "," count network-links "," num-intersections)
+  file-close
 end
 
 

@@ -1,12 +1,29 @@
 import time
+import os
+import csv
 from multiprocessing import Pool
 
-#start = time.perf_counter()
-#my_function()
-#end = time.perf_counter()
-#print(f"Time taken: {end - start:.4f} seconds")
-
 eps = 1e-10
+
+TIMING_LOG_PATH = os.path.join("output", "py_intersection_timing.csv")
+_TIMING_HEADER = ["timestamp", "context", "num_pseudopodia", "total_segments",
+                   "build_time_s", "compute_time_s", "total_time_s",
+                   "num_processes", "chunk_size"]
+
+
+def _log_timing(context, num_pseudopodia, total_segments, build_time, compute_time,
+                 total_time, num_processes, chunk_size):
+    os.makedirs("output", exist_ok=True)
+    write_header = not os.path.exists(TIMING_LOG_PATH)
+    with open(TIMING_LOG_PATH, "a", newline="") as f:
+        writer = csv.writer(f)
+        if write_header:
+            writer.writerow(_TIMING_HEADER)
+        writer.writerow([
+            time.strftime("%Y-%m-%d %H:%M:%S"), context, num_pseudopodia, total_segments,
+            f"{build_time:.6f}", f"{compute_time:.6f}", f"{total_time:.6f}",
+            num_processes, chunk_size,
+        ])
 
 def calculate_intersection(A, B):
     x1, y1, x2, y2 = A
@@ -114,9 +131,9 @@ def remove_duplicate_intersections(intersections):
 
     return intersections
 
-def process_intersections(raw_data, num_processes=1, chunk_size=100):
+def process_intersections(raw_data, num_processes=1, chunk_size=100, log_context="sim"):
     # Erstellung der result_arr wie im ursprünglichen Code
-    start = time.perf_counter()
+    run_start = time.perf_counter()
 
     result_arr = []
     #print("{} raw_data length: {}".format(time.strftime("[%H:%M:%S]"), len(raw_data)))
@@ -135,39 +152,37 @@ def process_intersections(raw_data, num_processes=1, chunk_size=100):
                 result_arr.append([x1, y1, x2, y2])
 
     #print("{} raw_data length: {}".format(time.strftime("[%H:%M:%S]"), len(result_arr)))
-    end = time.perf_counter()
-   # print(f"ITime taken: {end - start:.4f} seconds")
+    build_time = time.perf_counter() - run_start
 
     # Aufteilung der Arbeit in Chunks
-    scnd_start = time.perf_counter()
+    compute_start = time.perf_counter()
 
     tasks = []
     total_segments = len(result_arr)
-    for start in range(0, total_segments, chunk_size):
-        end = min(start + chunk_size, total_segments)
-        tasks.append((start, end, result_arr))
+    for chunk_start in range(0, total_segments, chunk_size):
+        chunk_end = min(chunk_start + chunk_size, total_segments)
+        tasks.append((chunk_start, chunk_end, result_arr))
 
     # Parallele Verarbeitung
-    count = 0
     with Pool(num_processes) as pool:
-        count+=1
         results = pool.map(process_segment_chunk, tasks)
-
 
     # Sammeln der Ergebnisse
     intersections = []
     for res in results:
         #print("Result collector index : {}".format(res[0]))
         intersections.extend(res[1])
-    
+
    # print("Len unfiltered: {}".format(len(intersections)))
     #filtered_list = remove_duplicate_intersections(intersections)
     #print("Len filtered: {}".format(len(filtered_list)))
     #sorted_list = sorted(filtered_list, key=lambda x: x[0] is not None)
 
-    scnd_end = time.perf_counter()
+    compute_time = time.perf_counter() - compute_start
+    total_time = time.perf_counter() - run_start
 
-   # print(f"IITime taken: {scnd_end - scnd_start:.4f} seconds")
-   # print(intersections)
+    _log_timing(log_context, len(raw_data), total_segments, build_time, compute_time,
+                total_time, num_processes, chunk_size)
+
     return intersections
     

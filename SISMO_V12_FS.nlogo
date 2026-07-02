@@ -23,6 +23,8 @@ globals [
   food-placement-type
   sim_id
   nudge-food-towards-center
+  network-timing-csv
+  tick-timing-csv
 ]
 
 extensions [
@@ -96,6 +98,20 @@ to setup
   if file-exists? csv-file-name [ file-delete csv-file-name ]
   file-open csv-file-name
   file-print "tick,blue,yellow,green"
+  file-close
+
+  ;; Timing instrumentation (network build / A* / per-tick)
+  py:run "import os\nif not os.path.exists('output'): os.makedirs('output')"
+  set network-timing-csv "output/netlogo_timing.csv"
+  if file-exists? network-timing-csv [ file-delete network-timing-csv ]
+  file-open network-timing-csv
+  file-print "tick,event,roundtrip_seconds,build_seconds,total_seconds,num_pseudopodia,num_networkpoints,num_network_links,num_intersections"
+  file-close
+
+  set tick-timing-csv "output/tick_timing.csv"
+  if file-exists? tick-timing-csv [ file-delete tick-timing-csv ]
+  file-open tick-timing-csv
+  file-print "tick,elapsed_seconds,num_pseudopodia,num_foods,avg_path_length,max_path_length"
   file-close
 
   reset-ticks
@@ -181,6 +197,7 @@ end
 ;; GO loop: main change — when a pseudopodium is on a food source it picks up the food's info-color
 to go
    ifelse any? foods with [ nutrient-value > 0 ] [
+    reset-timer
 
     print (list "Yellow:" count pseudopodia with [info-color = yellow]
             "Blue:" count pseudopodia with [info-color = blue]
@@ -248,6 +265,7 @@ to go
     ]
 
     ask networkpoints [ die ]
+    log-tick-timing timer
     tick
   ] [
     print (list "Yellow:" count pseudopodia with [info-color = yellow]
@@ -329,6 +347,21 @@ to update-info-color
       show (word "Mix by " [who] of myself " und " who)
     ]
   ]
+end
+
+;; per-tick wall-clock timing, to distinguish per-tick growth from per-event
+;; (network-creation / A*) growth
+to log-tick-timing [elapsed-seconds]
+  let lengths [length path-list] of pseudopodia
+  let avg-len 0
+  let max-len 0
+  if length lengths > 0 [
+    set avg-len mean lengths
+    set max-len max lengths
+  ]
+  file-open tick-timing-csv
+  file-print (word ticks "," elapsed-seconds "," count pseudopodia "," count foods "," avg-len "," max-len)
+  file-close
 end
 
 ;; for the plot
